@@ -126,6 +126,34 @@ fi
 #sudo rm -f $SQL_CNF
 
 
+# Install nginx webserver
+#sudo apt-get install nginx -y
+#sudo systemctl start nginx
+
+#sudo apt-get install php7.0-fpm -y
+TMP_EDT='.temp_update'
+APT_SRC='/etc/apt/sources.list'
+APT_CNF='/etc/apt/preferences'
+NGX_CNF='/etc/nginx/sites-enabled/default'
+#sudo echo "echo '' >> $APT_SRC " > $TMP_EDT
+#sudo echo "echo 'deb http://mirrordirector.raspbian.org/raspbian/ stretch main contrib non-free rpi' >> $APT_SRC" >> $TMP_EDT
+#sudo echo "echo 'Package: *' >> $APT_CNF" >> $TMP_EDT
+#sudo echo "echo 'Pin: release n=jessie' >> $APT_CNF" >> $TMP_EDT
+#sudo echo "echo 'Pin-Priority: 600' >> $APT_CNF" >> $TMP_EDT
+#sudo echo "sed -i -e 's/index index.html index.htm/index index.php index.html index.htm $NGX_CNF' >> $APT_CNF" >> $TMP_EDT
+#sudo chmod u+x $TMP_EDT
+#sudo ./$TMP_EDT
+
+#sudo apt-get update
+#sudo apt-get install -t  stretch php7.0-fpm -y
+
+#sudo echo "sed -i -e 's/index index.html index.htm/index index.php index.html index.htm/g $NGX_CNF' > $APT_CNF" > $TMP_EDT
+#sudo echo "sed -i -e 's/#location ~ \.php$ {/location ~ \.php$ {/g' $NGX_CNF' >> $APT_CNF" >>$TMP_EDT
+## FINISH ENABLING PHP 7.0 LATER
+
+# Let's get a firewall setup
+#sudo apt-get install ufw -y
+#sudo ufw allow 'Nginx HTTP'
 
 
 
