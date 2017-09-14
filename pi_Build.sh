@@ -1,111 +1,234 @@
 #!/bin/bash
 
 #   Raspberry Pi Build Script
-#   arronax - 08/19/2017
+#   arronax - 09/07/2017
 #   
-#   Must run without sudo.
+#   Must run as root
 
 #   Uncomment most everything before running
+#   See usage below
 
-#Get our user's home directory
-USR_DIR=`echo ~/`
-echo $USR_DIR
-cd $USR_DIR
+#   To enable SSH at boot: add a file called "ssh" onto boot partition of card
 
-# Welcome
-echo "Welcome $USER."
-SCR_USR=$USER
-echo "Your Home Directory is $USR_DIR."
-echo "Running config script..."
-#sleep 1
+# Functions
 
-# Need to enable SSH, user must do this for now
-echo "User must enable SSH in GUI..."
-#sleep 2
-#sudo raspi-config
+logger() {
+    TMP_LOG="$1"
+    shift
+    while test ${#} -gt 0; do
+        TMP_LOG=$TMP_LOG" - "$1
+        shift
+    done
+    echo $TMP_LOG >> $LOG_FLE
+}
 
-# Update stuff
-echo "Update package manager..."
-#sleep 2
-#sudo apt-get update -y
-#sudo apt-get upgrade -y
+isCalledAgain() {
+    if [ -n "$1" ]; then
+        #echo "Error: Attempted Redeclaration. OLD: $1. NEW: $2."
+        echo "isCalled:$"="1 " $1
+        echo "isCalled:$"="2 " $2
+        echo "BAILOUT"
+        logger "BAILOUT" "isCalledAgain" "$1" "$2"
+        exit -1
+    fi
+}
 
-# Get vim configured
-#echo "Install and Configure Vim..."
-#sleep 2
-#sudo apt-get install vim -y
-#VIM_RC=$USR_DIR'.vimrc'
-#echo $VIM_RC
-#echo 'syntax on               " Enable color coding' >> $VIM_RC
-#echo 'set tabstop=4           " \t has width 4' >> $VIM_RC
-#echo 'set shiftwidth=4        " Indents have width of 4' >> $VIM_RC
-#echo 'set softtabstop=4       " Set number of columns for \t' >> $VIM_RC
-#echo 'set expandtab           " Expand \t to spaces' >> $VIM_RC
+doesFileExist() {
+    if [ -f $2 ]; then
+        SSH_FLE=1
+        logger "doesFileExist" "File Found" $2 $SSH_FLE
+    else
+        SSH_FLE=0
+        logger "doesFileExist" "File Not Found" $2 $SSH_FLE
+        echo "WARNING - FILE NOT FOUND - $2"
+    fi
+    
+    
+}
 
-# Get Git configured
-echo "Install and configure Git..."
-#sleep 2
-#sudo apt-get install git -y
+getUserName() {
+    if [ "$NEW_USR" == "" ]; then
+        read -p "Please enter the name of the relevant user: " NEW_USR
+    fi
+}
 
-#read -p "Please enter you Git username. Simply press Enter to skip this. " GIT_USR
-#git config --global user.name "$GIT_USR"
-echo "Username set: "
-git config --global user.name
+# Need to declare some variables for our work
+NEW_USR=""
+USR_PSD=""
+GIT_USR=""
+GIT_EML=""
+SSH_PTH=""
+SSH_FLE=""
+VIM_TOO=""
+TRE_TOO=""
+MSL_TOO=""
+NGX_TOO=""
+UFW_TOO=""
+LOG_FLE=".pi_Build."$(date +%H%M%S)".log"
+CUR_PRC=""
 
-#read -p "Please enter your Git email. Simply press Enter to skip this. " GIT_EMA
-#git config --global user.email "$GIT_EMA"
-echo "Email set: "
-git config --global user.email
+logger "pi_Build.sh" "BEGIN"
 
-# Enable key auth, assuming it's in place
-echo "Enable SSH Key Auth for Git..."
-#sleep 2
-#SSH_CONF=$USR_DIR'.ssh/config'
-#echo 'host github.com' >> $SSH_CONF
-#echo '  HostName github.com' >> $SSH_CONF
-#echo '  IdentityFile ~/.ssh/id_rsa' >> $SSH_CONF
-#echo '  User git' >> $SSH_CONF
+ARG_CNT=${#}
+# Let's process the command line args
+logger "***PROCESS ARGS***"
+logger "**Cycle Args" $@
+while test ${#} -gt 0; do
+    case $1 in
+        -[Uu]|--user)
+            TMP=$2
+            logger "USER" "BEGIN" "$NEW_USR" "$2"
+            if [ $1 = "-U" ]; then
+                USR_PSD=1
+                echo "SUDO"
+            fi
+            isCalledAgain "$NEW_USR" "$TMP"
+            NEW_USR=$2
+            logger "USER" "COMPLETE" "$USR_PSD"
+            shift
+            ;;
+        -g|--git)
+            TMP=$2
+            logger "GIT" "BEGIN" "$GIT_USR" "$2" "$3"
+            isCalledAgain "$GIT_USR" "$TMP"
+            GIT_USR=$2
+            GIT_EML=$3
+            logger "GIT" "COMPLETE"
+            shift
+            shift
+            ;;
+        -v|--vim)
+            logger "VIM" "BEGIN"
+            isCalledAgain "$VIM_TOO"
+            VIM_TOO="1"
+            echo "Vim too"
+            logger "VIM" "COMPLETE"
+            ;;
+        -s|--ssh)
+            TMP=$2
+            logger "SSH" "BEGIN" "$SSH_PTH" "$2"
+            isCalledAgain "$SSH_PTH" "$TMP"
+            doesFileExist $2
+            SSH_PTH=$2
+            echo $SSH_PTH
+            logger "SSH" "COMPLETE"
+            shift
+            ;;
+        -t|--tree)
+            logger "TREE" "BEGIN"
+            isCalledAgain "$TRE_TOO"
+            TRE_TOO="1"
+            echo "Tree too"
+            logger "TREE" "COMPLETE"
+            ;;
+        -m|--mysql)
+            logger "MYSQL" "BEGIN"
+            isCalledAgain "$MSL_TOO"
+            MSL_TOO="1"
+            echo "MySQL too"
+            logger "MYSQL" "COMPLETE"
+            ;;
+        -n|--nginx)
+            isCalledAgain "$NGX_TOO"
+            NGX_TOO="1"
+            echo "Nginx too"
+            ;;
+        -f|--ufw)
+            isCalledAgain "$UFW_TOO"
+            UFW_TOO="1"
+            echo "UFW too"
+            ;;
+        -l|--log)
+            isCalledAgain "$LOG_FLE"
+            LOG_FLE="$2"
+            echo "LOG FILE"
+            ;;
+        *)
+            echo "Dude, what?"
+            exit 1
+            ;;
+    esac
+    shift
+done
 
-echo "Remember to clone your repos."
-#sleep 2
+# In case we didn't do anything yet
+if [ $ARG_CNT -eq 0 ]; then
+    echo "No args yo."
+    exit -1
+fi
 
-# I like tree now that I know about it
-echo "Installing Tree..."
-#sleep 2
-#sudo apt-get install tree -y
+if [ "$VIM_TOO" != "" ] || [ "$MSL_TOO" != "" ] || [ "$TRE_TOO" != "" ] || [ "$GIT_USR" != "" ] || [ "$NGX_TOO" != "" ] || [ "$UFW_TOO" != "" ]; then
+    logger "APT-GET UPDATE"
+    apt-get -y update
+    apt-get -y upgrade
+fi
 
-# Need to get MySQL
-#sudo apt-get install mysql-server python-mysqldb mysql-client -y
-# Need to set root password
-#sleep 2
-SQL_PID=`sudo cat /var/run/mysqld/mysqld.pid`
-#echo "P_ID: $SQL_PID"
-#sudo kill $SQL_PID
-#echo "Create temp_conf here:"
-#pwd
-INIT_F=$USR_DIR'temp_conf.sql'
-#echo "alter user 'root'@'localhost' identified by 'Chance1791';" >> $INIT_F
-#echo "INIT_F = $INIT_F"
-SU_SCR=$USR_DIR'.temp.sh'
-#echo "mysqld --init-file=$INIT_F &" >> $SU_SCR
-#sudo rm $INIT_F
-#sudo chmod u+x $SU_SCR
-#sudo su -c $SU_SCR
-#echo 'Works?'
-#sudo echo $SU_SCR
-#sudo rm -f $SU_SCR
-#sudo rm -f $INIT_F
-# By this point root will be able to login to mysql
+# Add User
+#logger "ADDUSER" "BEGIN"
+#echo "test" "$NEW_USR"
+#if [  "$NEW_USR" != "" ]; then
+#    echo "PLEASE MORE HELP"
+#    adduser $NEW_USR
+#    if [ "$USR_PSD" ==  "1" ]; then
+#        adduser $NEW_USR sudo
+#        logger "ADDUSER" "GOT SUDO"
+#    fi
+#    logger "ADDUSER" "$NEW_USR" "$USR_PSD"
+#fi
+#logger "ADDUSER" "COMPLETE"
 
-# Need to add a user for the person running the script
-SQL_CNF=$USR_DIR'.sql_conf.sql'
-#read -p "Enter a password for your MySQL localhost account: " SQL_PASS
-#echo "grant all privileges on test.* to '$SCR_USR'@'localhost' identified by '$SQL_PASS';" >> $SQL_CNF
-USR_DB="${SCR_USR}_database"
-#echo "create database $USR_DB;" >> $SQL_CNF
-#echo "grant all privileges on $USR_DB.* to '$SCR_USR'@'localhost' identified by '$SQL_PASS';" >> $SQL_CNF
-#sudo mysql < $SQL_CNF
-#sudo rm -f $SQL_CNF
+# Configure SSH
+#logger "CONFIGURE SSH" "BEGIN"
+#if [ "$SSH_PTH" != "" ]; then
+#    getUserName
+#    SSH_DIR="/home/$NEW_USR/.ssh/"
+#    SSH_PUB="id_rsa.pub" 
+#    echo "SSH should have been enabled at boot"
+#    install -d -m 700 $SSH_DIR
+#    sudo chown $NEW_USR $SSH_DIR
+#    mv $SSH_PTH $SSH_DIR$SSH_PUB
+#    cat $SSH_DIR$SSH_PUB | ssh $NEW_USR@192.168.1.76 cat >> $SSH_DIR"authorized_keys"
+#    logger "SSH CONFIG" `cat $SSH_DIR"authorized_keys"`
+
+#fi
+#logger "CONFIGURE SSH" "COMPLETE"
+
+# Configure Vim
+# We don\'t deserve Vim being set up properly
+# Until we can set up SSH properly.
+#logger "CONFIGURE Vim" "BEGIN"
+#if [ "$VIM_TOO" == "1" ]; then
+#    getUserName
+#    apt-get install vim -y
+#    VIM_CNF="/home/$NEW_USR/.vimrc"
+#    echo 'syntax on               " Enable color coding' >> $VIM_CNF
+#    echo 'set tabstop=4           " \t has width 4' >> $VIM_CNF
+#    echo 'set shiftwidth=4        " Indents have width of 4' >> $VIM_CNF
+#    echo 'set softtabstop=4       " Set number of columns for \t' >> $VIM_CNF
+#    echo 'set expandtab           " Expand \t to spaces' >> $VIM_CNF
+#fi
+#logger "CONFIGURE Vim" "COMPLETED"
+
+#
+#
+# Main functions above here have been verified
+#
+#
+
+if [ "$GIT_USR" != "" ]; then
+    GIT_DIR="/home/$NEW_USR/.gitconfig"
+    apt-get install git -y
+    
+    echo "[user]" > "$GIT_DIR"
+    echo "\tname = $GIT_USR" >> "$GIT_DIR"
+    echo "\temail = $GIT_EML" >> "$GIT_DIR"
+
+    if [ "$VIM_TOO" == "1" ]; then
+        echo "[core]" >> "$GIT_DIR"
+        echo "\teditor = vim" >> "$GIT_DIR"
+    fi
+
+fi
 
 
 
@@ -113,5 +236,7 @@ USR_DB="${SCR_USR}_database"
 
 
 
-# Any remaining changes need to be made
-#reboot now
+
+
+
+logger "pi_Build.sh" "COMPLETE" 
