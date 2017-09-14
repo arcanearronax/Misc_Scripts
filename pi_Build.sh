@@ -234,6 +234,7 @@ if [ "$GIT_USR" != "" ]; then
     mv "$GIT_KEY" "/home/$NEW_USR/.ssh/id_rsa"
     ssh-add "/home/$NEW_USR/.ssh/id_rsa"
 
+
 fi
 
 
