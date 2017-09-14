@@ -93,7 +93,9 @@ while test ${#} -gt 0; do
             isCalledAgain "$GIT_USR" "$TMP"
             GIT_USR=$2
             GIT_EML=$3
+            GIT_KEY=$4
             logger "GIT" "COMPLETE"
+            shift
             shift
             shift
             ;;
@@ -227,6 +229,10 @@ if [ "$GIT_USR" != "" ]; then
         echo "[core]" >> "$GIT_DIR"
         echo "\teditor = vim" >> "$GIT_DIR"
     fi
+
+    # add a key
+    mv "$GIT_KEY" "/home/$NEW_USR/.ssh/id_rsa"
+    ssh-add "/home/$NEW_USR/.ssh/id_rsa"
 
 fi
 
