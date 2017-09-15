@@ -227,7 +227,7 @@ if [ "$GIT_USR" != "" ]; then
     echo "\tname = $GIT_USR" >> "$GIT_DIR"
     echo "\temail = $GIT_EML" >> "$GIT_DIR"
 
-    if [ "$VIM_TOO" == "1" ]; then
+    if [ "$VIM_TOO" == "1" ]; then 
         echo "[core]" >> "$GIT_DIR"
         echo "\teditor = vim" >> "$GIT_DIR"
         logger "INSTALL GIT" "Vim Too"
