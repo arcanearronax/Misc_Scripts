@@ -49,6 +49,7 @@ doesFileExist() {
 getUserName() {
     if [ "$NEW_USR" == "" ]; then
         read -p "Please enter the name of the relevant user: " NEW_USR
+        logger "getUserName" "$NEW_USR"
     fi
 }
 
@@ -89,12 +90,13 @@ while test ${#} -gt 0; do
             ;;
         -g|--git)
             TMP=$2
-            logger "GIT" "BEGIN" "$GIT_USR" "$2" "$3"
+            logger "GIT" "BEGIN" "$GIT_USR" "$2" "$3" "$4"
             isCalledAgain "$GIT_USR" "$TMP"
             GIT_USR=$2
             GIT_EML=$3
             GIT_KEY=$4
             logger "GIT" "COMPLETE"
+            shift
             shift
             shift
             shift
@@ -221,24 +223,31 @@ logger "INSTALL GIT" "Begin"
 if [ "$GIT_USR" != "" ]; then
     GIT_DIR="/home/$NEW_USR/.gitconfig"
     logger "INSTALL GIT" "$GIT_USR" "$GIT_KEY" "$GIT_DIR" "$GIT_EML"
+    getUserName
     apt-get install git -y
     
     echo "[user]" > "$GIT_DIR"
-    echo "\tname = $GIT_USR" >> "$GIT_DIR"
-    echo "\temail = $GIT_EML" >> "$GIT_DIR"
+    echo "  name = $GIT_USR" >> "$GIT_DIR"
+    echo "  email = $GIT_EML" >> "$GIT_DIR"
 
     if [ "$VIM_TOO" == "1" ]; then 
         echo "[core]" >> "$GIT_DIR"
-        echo "\teditor = vim" >> "$GIT_DIR"
+        echo "  editor = vim" >> "$GIT_DIR"
         logger "INSTALL GIT" "Vim Too"
     fi
 
     # add a key
-    mv "$GIT_KEY" "/home/$NEW_USR/.ssh/id_rsa"
-    ssh-add "/home/$NEW_USR/.ssh/id_rsa"
+    KEY_DIR="/home/$NEW_USR/.ssh/id_rsa"
+    mv "$GIT_KEY" "$KEY_DIR"
+    ssh-add "$KEY_DIR"
+    chmod 644 "$KEY_DIR"
 
-    # Require user input here
-    ssh "git@github.com"
+    SSH_CNF="/home/$NEW_USR/.ssh/config"
+    echo "host github.com" >> "$SSH_CNF"
+    echo "  HostName github.com" >> "$SSH_CNF"
+    echo "  IdentityFile ~/.ssh/id_rsa" >> "$SSH_CNF"
+    echo "  User git" >> "$SSH_CNF"
+    chmod 600 "$SSH_CNF"
 
     # Let's make sure it got set up
     TMP=""
@@ -247,11 +256,11 @@ if [ "$GIT_USR" != "" ]; then
     if [ "$TMP" == "" ]; then
         logger "INSTALL GIT" "TMP NULL"
     else
-        logger "INSTALL GIT" "TMP"
+        logger "INSTALL GIT" "TMP" " "
         logger "$TMP"
     fi
 fi
-logger "INSTALL GIT" "COMPLETE
+logger "INSTALL GIT" "COMPLETE"
 
 
 
