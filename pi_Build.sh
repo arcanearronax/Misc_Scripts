@@ -168,56 +168,50 @@ if [ "$VIM_TOO" != "" ] || [ "$MSL_TOO" != "" ] || [ "$TRE_TOO" != "" ] || [ "$G
 fi
 
 # Add User
-#logger "ADDUSER" "BEGIN"
-#echo "test" "$NEW_USR"
-#if [  "$NEW_USR" != "" ]; then
-#    echo "PLEASE MORE HELP"
-#    adduser $NEW_USR
-#    if [ "$USR_PSD" ==  "1" ]; then
-#        adduser $NEW_USR sudo
-#        logger "ADDUSER" "GOT SUDO"
-#    fi
-#    logger "ADDUSER" "$NEW_USR" "$USR_PSD"
-#fi
-#logger "ADDUSER" "COMPLETE"
+logger "ADDUSER" "BEGIN"
+echo "test" "$NEW_USR"
+if [  "$NEW_USR" != "" ]; then
+    echo "PLEASE MORE HELP"
+    adduser $NEW_USR
+    if [ "$USR_PSD" ==  "1" ]; then
+        adduser $NEW_USR sudo
+        logger "ADDUSER" "GOT SUDO"
+    fi
+    logger "ADDUSER" "$NEW_USR" "$USR_PSD"
+fi
+logger "ADDUSER" "COMPLETE"
 
 # Configure SSH
-#logger "CONFIGURE SSH" "BEGIN"
-#if [ "$SSH_PTH" != "" ]; then
-#    getUserName
-#    SSH_DIR="/home/$NEW_USR/.ssh/"
-#    SSH_PUB="id_rsa.pub" 
-#    echo "SSH should have been enabled at boot"
-#    install -d -m 700 $SSH_DIR
-#    sudo chown $NEW_USR $SSH_DIR
-#    mv $SSH_PTH $SSH_DIR$SSH_PUB
-#    cat $SSH_DIR$SSH_PUB | ssh $NEW_USR@192.168.1.76 cat >> $SSH_DIR"authorized_keys"
-#    logger "SSH CONFIG" `cat $SSH_DIR"authorized_keys"`
-
-#fi
-#logger "CONFIGURE SSH" "COMPLETE"
+logger "CONFIGURE SSH" "BEGIN"
+if [ "$SSH_PTH" != "" ]; then
+    getUserName
+    SSH_DIR="/home/$NEW_USR/.ssh/"
+    SSH_PUB="id_rsa.pub" 
+    echo "SSH should have been enabled at boot"
+    install -d -m 700 $SSH_DIR
+    sudo chown $NEW_USR $SSH_DIR
+    mv $SSH_PTH $SSH_DIR$SSH_PUB
+    cat $SSH_DIR$SSH_PUB | ssh $NEW_USR@192.168.1.76 cat >> $SSH_DIR"authorized_keys"
+    logger "SSH CONFIG" `cat $SSH_DIR"authorized_keys"`
+fi
+logger "CONFIGURE SSH" "COMPLETE"
 
 # Configure Vim
 # We don\'t deserve Vim being set up properly
 # Until we can set up SSH properly.
-#logger "CONFIGURE Vim" "BEGIN"
-#if [ "$VIM_TOO" == "1" ]; then
-#    getUserName
-#    apt-get install vim -y
-#    VIM_CNF="/home/$NEW_USR/.vimrc"
-#    echo 'syntax on               " Enable color coding' >> $VIM_CNF
-#    echo 'set tabstop=4           " \t has width 4' >> $VIM_CNF
-#    echo 'set shiftwidth=4        " Indents have width of 4' >> $VIM_CNF
-#    echo 'set softtabstop=4       " Set number of columns for \t' >> $VIM_CNF
-#    echo 'set expandtab           " Expand \t to spaces' >> $VIM_CNF
-#fi
-#logger "CONFIGURE Vim" "COMPLETED"
+logger "CONFIGURE Vim" "BEGIN"
+if [ "$VIM_TOO" == "1" ]; then
+    getUserName
+    apt-get install vim -y
+    VIM_CNF="/home/$NEW_USR/.vimrc"
+    echo 'syntax on               " Enable color coding' >> $VIM_CNF
+    echo 'set tabstop=4           " \t has width 4' >> $VIM_CNF
+    echo 'set shiftwidth=4        " Indents have width of 4' >> $VIM_CNF
+    echo 'set softtabstop=4       " Set number of columns for \t' >> $VIM_CNF
+    echo 'set expandtab           " Expand \t to spaces' >> $VIM_CNF
+fi
+logger "CONFIGURE Vim" "COMPLETED"
 
-#
-#
-# Main functions above here have been verified
-#
-#
 
 logger "INSTALL GIT" "Begin"
 if [ "$GIT_USR" != "" ]; then
@@ -262,6 +256,11 @@ if [ "$GIT_USR" != "" ]; then
 fi
 logger "INSTALL GIT" "COMPLETE"
 
+# Install Tree
+logger "INSTALL TREE" "BEGIN"
+if [ "$TRE_TOO" == "1" ]; then
+    apt-get install tree -y
+fi
 
 
 
