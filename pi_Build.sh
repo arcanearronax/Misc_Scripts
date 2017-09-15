@@ -138,9 +138,13 @@ while test ${#} -gt 0; do
             echo "Nginx too"
             ;;
         -f|--ufw)
+            logger "UFW" "BEGIN"
             isCalledAgain "$UFW_TOO"
             UFW_TOO="1"
+            UFW_SSH="$2"
+            logger "UFW" "$UFW_TOO" "$UFW_SSH"
             echo "UFW too"
+            shift
             ;;
         -l|--log)
             isCalledAgain "$LOG_FLE"
@@ -262,7 +266,18 @@ if [ "$TRE_TOO" == "1" ]; then
     apt-get install tree -y
 fi
 
+# Install UFW
+logger "INSTALL UFW" "BEGIN"
+if [ "$UFW_TOO" == "SSH" ]; then
+    apt-get install ufw -y
 
+    if [ "$UFW_SSH" == "SSH" ]; then
+        ufw allow ssh
+    fi
+
+    ufw enable
+fi
+logger "INSTALL UFW" "COMPLETE"
 
 
 
