@@ -217,8 +217,10 @@ fi
 #
 #
 
+logger "INSTALL GIT" "Begin"
 if [ "$GIT_USR" != "" ]; then
     GIT_DIR="/home/$NEW_USR/.gitconfig"
+    logger "INSTALL GIT" "$GIT_USR" "$GIT_KEY" "$GIT_DIR" "$GIT_EML"
     apt-get install git -y
     
     echo "[user]" > "$GIT_DIR"
@@ -228,15 +230,28 @@ if [ "$GIT_USR" != "" ]; then
     if [ "$VIM_TOO" == "1" ]; then
         echo "[core]" >> "$GIT_DIR"
         echo "\teditor = vim" >> "$GIT_DIR"
+        logger "INSTALL GIT" "Vim Too"
     fi
 
     # add a key
     mv "$GIT_KEY" "/home/$NEW_USR/.ssh/id_rsa"
     ssh-add "/home/$NEW_USR/.ssh/id_rsa"
 
+    # Require user input here
+    ssh "git@github.com"
 
+    # Let's make sure it got set up
+    TMP=""
+    TMP=`cat "/home/$NEW_USR/.ssh/known_hosts" | grep github.com`
+    logger "INSTALL GIT" "KNOWN HOSTS"
+    if [ "$TMP" == "" ]; then
+        logger "INSTALL GIT" "TMP NULL"
+    else
+        logger "INSTALL GIT" "TMP"
+        logger "$TMP"
+    fi
 fi
-
+logger "INSTALL GIT" "COMPLETE
 
 
 
