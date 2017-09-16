@@ -331,11 +331,31 @@ if [ "$NGX_TOO" == "1" ]; then
     apt-get install nginx -y
 
     # Need php and mysql integration
-    apt-get install php7.0-cgi php7.0-mysql -y
+    apt-get install php7.0-fpm php7.0-cgi php7.0-mysql -y
     
-    # /etc/php/7.0/cgi
+    # Configure php
     PHP_CNF="/etc/php/7.0/cgi/php.ini"
     sed -i 's/cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' "$PHP_CNF"
+    systemctl restart php7.0-fpm
+
+    # Enable nginx to use php
+    NGX_PHP="/etc/nginx/sites-available/default"
+    # index index.html index.htm index.nginx-debian.html
+    sed -i 's/index index.html index.htm index.nginx-debian.html;/index index.php index.html index.htm index.nginx-debian.html;/g' "$NGX_PHP"
+    sed -i 's/#location \~ \\.php\$ {/location \~ \\.php\$ {/g' "$NGX_PHP"
+    sed -i 's/#\tinclude snippets\/fastcgi-php.conf;/\tinclude snippets\/fastcgi-php.conf;/g' "$NGX_PHP"
+    sed -i 's/#\tfastcgi_pass unix:\/var\/run\/php\/php7.0-fpm.sock;/\tfastcgi_pass unix:\/var\/run\/php\/php7.0-fpm.sock;/g' "$NGX_PHP"
+    sed -i '63s/#}/}/g' "$NGX_PHP" # Yeah, not too proud of this.
+    sed -i 's/#location \~ \/\\.ht {/location \~ \/\\.ht {/g' "$NGX_PHP"
+    sed -i 's/#\tdeny all;/\tdeny all;/g' "$NGX_PHP"
+    sed -i '70s/#}/}/g' "$NGX_PHP"
+    
+    # This will need some additional logic...
+    ufw allow http
+    ufw allow https
+    nginx -t
+    systemctl reload nginx
+
 fi
 logger "INSTALL NGINX" "COMPLETE"
 
