@@ -279,6 +279,48 @@ if [ "$UFW_TOO" == "SSH" ]; then
 fi
 logger "INSTALL UFW" "COMPLETE"
 
+# Install MySQL
+# This is gonna be fun...
+logger "INSTALL MYSQL" "BEGIN"
+if [ "$MSL_TOO" == "1" ]; then
+    apt-get install mysql-server python-mysqldb mysql-client -y
+
+    # Now let's kill the running process so we can auto-config
+    sleep 2
+    MSL_PID=""
+    MSL_PID=`ps -ef | grep mysqld | grep ? | awk '{ print $2}'`
+
+    if [ "$MSL_PID" != "" ]; then
+        kill "$MSL_PID"
+        logger "INSTALL MYSQL" "KILLED" "$MSL_PID"
+        MSL_PID=""
+    else
+        echo "PROCESS ID NOT FOUND"
+        logger "INSTALL MYSQL" "PID NOT FOUND"
+    fi
+
+    # Time for config stuff
+    getUserName
+    MSL_DIR="/home/$NEW_USR"
+    MSL_CNF="$MSL_DIR/temp_conf.sql"
+    ROT_PSD=""
+    read -p "Enter root password for MYSQL Database: " ROT_PSD
+    echo "alter user 'root'@'localhost' identified by '$ROT_PSD';" >> "$MSL_CNF"
+    `mysqld --init-file="$MSL_CNF" &`
+    # Root will be able to login to MySQL by this point
+
+    MSL_PSD=""
+    USR_CNF="/home/$NEW_USR/temp_usr.sql"
+    read -p "Please enter $NEW_USR's password for MySQL: " MSL_PSD
+    echo "create database $NEW_USR;" > "$USR_CNF"
+    echo "grant all privileges on $NEW_USR.* to '$NEW_USR'@'localhost' identified by '$MSL_PSD';" >> "$USR_CNF"
+    echo "flush privileges;" >> "$USR_CNF"
+    mysql < "$USR_CNF"
+    
+fi
+
+
+
 
 
 
