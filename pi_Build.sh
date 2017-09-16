@@ -325,8 +325,19 @@ if [ "$MSL_TOO" == "1" ]; then
 fi
 logger "INSTALL MYSQL" "COMPLETE"
 
+# Install NGINX
+logger "INSTALL NGINX" "BEGIN"
+if [ "$NGX_TOO" == "1" ]; then
+    apt-get install nginx -y
 
-
+    # Need php and mysql integration
+    apt-get install php7.0-cgi php7.0-mysql -y
+    
+    # /etc/php/7.0/cgi
+    PHP_CNF="/etc/php/7.0/cgi/php.ini"
+    sed -i 's/cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' "$PHP_CNF"
+fi
+logger "INSTALL NGINX" "COMPLETE"
 
 
 
