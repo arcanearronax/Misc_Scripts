@@ -306,6 +306,7 @@ if [ "$MSL_TOO" == "1" ]; then
     ROT_PSD=""
     read -p "Enter root password for MYSQL Database: " ROT_PSD
     echo "alter user 'root'@'localhost' identified by '$ROT_PSD';" >> "$MSL_CNF"
+    logger "INSTALL MYSQL" "ROOT CONF" "COMPLETE"
     `mysqld --init-file="$MSL_CNF" &`
     # Root will be able to login to MySQL by this point
 
@@ -315,9 +316,15 @@ if [ "$MSL_TOO" == "1" ]; then
     echo "create database $NEW_USR;" > "$USR_CNF"
     echo "grant all privileges on $NEW_USR.* to '$NEW_USR'@'localhost' identified by '$MSL_PSD';" >> "$USR_CNF"
     echo "flush privileges;" >> "$USR_CNF"
+    logger "INSTALL MYSQL" "USER CONF" "COMPLETE"
     mysql < "$USR_CNF"
-    
+
+    rm -rf "$MSL_CNF"
+    rm -rf "$USR_CNF"    
+
 fi
+logger "INSTALL MYSQL" "COMPLETE"
+
 
 
 
