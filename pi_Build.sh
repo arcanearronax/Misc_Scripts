@@ -2,56 +2,13 @@
 
 #   Raspberry Pi Build Script
 #   arronax - 09/07/2017
-#   
+#
 #   Must run as root
-
-#   Uncomment most everything before running
-#   See usage below
-
 #   To enable SSH at boot: add a file called "ssh" onto boot partition of card
 
-# Functions
-
-logger() {
-    TMP_LOG="$1"
-    shift
-    while test ${#} -gt 0; do
-        TMP_LOG=$TMP_LOG" - "$1
-        shift
-    done
-    echo $TMP_LOG >> $LOG_FLE
-}
-
-isCalledAgain() {
-    if [ -n "$1" ]; then
-        #echo "Error: Attempted Redeclaration. OLD: $1. NEW: $2."
-        echo "isCalled:$"="1 " $1
-        echo "isCalled:$"="2 " $2
-        echo "BAILOUT"
-        logger "BAILOUT" "isCalledAgain" "$1" "$2"
-        exit -1
-    fi
-}
-
-doesFileExist() {
-    if [ -f $2 ]; then
-        SSH_FLE=1
-        logger "doesFileExist" "File Found" $2 $SSH_FLE
-    else
-        SSH_FLE=0
-        logger "doesFileExist" "File Not Found" $2 $SSH_FLE
-        echo "WARNING - FILE NOT FOUND - $2"
-    fi
-    
-    
-}
-
-getUserName() {
-    if [ "$NEW_USR" == "" ]; then
-        read -p "Please enter the name of the relevant user: " NEW_USR
-        logger "getUserName" "$NEW_USR"
-    fi
-}
+#################################
+########### Variables ###########
+#################################
 
 # Need to declare some variables for our work
 NEW_USR=""
@@ -67,36 +24,106 @@ NGX_TOO=""
 UFW_TOO=""
 LOG_FLE=".pi_Build."$(date +%H%M%S)".log"
 CUR_PRC=""
+APT_LOG=".apt.$(date +%H%M%S).log"
+APT_GET="0"
+
+#################################
+########### Functions ###########
+#################################
+
+# Pass whatever args you want to be recorded and hyphen delimited.
+logger() {
+    TMP_LOG="$1"
+    shift
+    while test ${#} -gt 0; do
+        TMP_LOG="$TMP_LOG - $1"
+        shift
+    done
+    printf "$TMP_LOG\n" >> "$LOG_FLE"
+}
+
+procLog() {
+  logger "\tprocLog" "$1"
+  printf '\n' >> "$APT_LOG"
+  echo "$1" >> "$APT_LOG"
+}
+
+# Check to see if an arg is being passed again
+isCalledAgain() {
+    if [ -n "$1" ]; then
+        echo "ERROR - is CalledAgin - $1 - $2"
+        logger "BAILOUT" "isCalledAgain" "$1" "$2"
+        exit -1
+    fi
+}
+
+# Check to see if $2 is a file that exists
+doesFileExist() {
+    if [ -f "$2" ]; then
+        SSH_FLE=1
+        logger "doesFileExist" "File Found" "$2" "$SSH_FLE"
+    else
+        SSH_FLE=0
+        logger "doesFileExist" "File Not Found" "$2" "$SSH_FLE"
+        echo "WARNING - FILE NOT FOUND - $2"
+    fi
+}
+
+# If NEW_USR="", then prompt user for the user's name
+getUserName() {
+    if [ "$NEW_USR" == "" ]; then
+        read -p "Please enter the name of the relevant user: " NEW_USR
+        logger "getUserName" "$NEW_USR"
+    fi
+}
+
+#################################
+########### Main Func ###########
+#################################
 
 logger "pi_Build.sh" "BEGIN"
 
-ARG_CNT=${#}
+# In case no args are passed
+if [ ${#} -eq 0 ]; then
+    echo "No args yo."
+    exit -1
+fi
+
 # Let's process the command line args
 logger "***PROCESS ARGS***"
-logger "**Cycle Args" $@
+logger "**Cycle Args**" $@
 while test ${#} -gt 0; do
-    case $1 in
+    case "$1" in
         -[Uu]|--user)
-            TMP=$2
+            # Enter
             echo "Add User - $2"
-            logger "USER" "ARGS" "$NEW_USR" "$2"
-            if [ $1 = "-U" ]; then
+            logger "USER" "ARGS" "BEGIN" "$2"
+            # Validate
+            TMP="$2"
+            isCalledAgain "$NEW_USR" "$TMP"
+            NEW_USR=$2
+            # Process aux args
+            if [ "$1" = "-U" ]; then
                 USR_PSD=1
                 echo "Add User - with sudo"
             fi
-            isCalledAgain "$NEW_USR" "$TMP"
-            NEW_USR=$2
+            # Finalize
             logger "USER" "ARGS" "$USR_PSD"
             shift
             ;;
         -g|--git)
-            TMP=$2
+            # Document
             echo "Install Git - $2 $3 $4"
             logger "GIT" "ARGS" "$GIT_USR" "$2" "$3" "$4"
+            # Validate
+            TMP="$2"
             isCalledAgain "$GIT_USR" "$TMP"
-            GIT_USR=$2
-            GIT_EML=$3
-            GIT_KEY=$4
+            # Process aux args
+            GIT_USR="$2"
+            GIT_EML="$3"
+            GIT_KEY="$4"
+            APT_GET="1"
+            # Finalize
             logger "GIT" "ARGS"
             shift
             shift
@@ -104,52 +131,79 @@ while test ${#} -gt 0; do
             shift
             ;;
         -v|--vim)
+            # Document
             echo "Install Vim"
             logger "VIM" "ARGS"
+            # Validate
             isCalledAgain "$VIM_TOO"
+            # Process aux args
             VIM_TOO="1"
-            logger "VIM" "COMPLETE"
+            APT_GET="1"
+            # Finalize
+            logger "VIM" "ARGS"
             ;;
         -s|--ssh)
-            TMP=$2
+            # Document
             echo "Configure SSH"
-            logger "SSH" "ARGS" "$SSH_PTH" "$2"
+            logger "SSH" "ARGS" "$2"
+            # Validate
+            TMP="$2"
             isCalledAgain "$SSH_PTH" "$TMP"
-            doesFileExist $2
-            SSH_PTH=$2
-            echo $SSH_PTH
-            logger "SSH" "ARGS" 
+            doesFileExist "$2"
+            # Process aux args
+            SSH_PTH="$2"
+            # Finalize
+            logger "SSH" "ARGS"
             shift
             ;;
         -t|--tree)
+            # Document
             echo "Install Tree"
             logger "TREE" "ARGS"
+            # Validate
             isCalledAgain "$TRE_TOO"
+            # Process aux args
             TRE_TOO="1"
+            APT_GET="1"
+            # Finalize
             logger "TREE" "ARGS" "$TRE_TOO"
             ;;
         -m|--mysql)
+            # Document
             echo "Install MySQL"
             logger "MYSQL" "ARGS"
+            # Validate
             isCalledAgain "$MSL_TOO"
+            # Process aux args
             MSL_TOO="1"
+            APT_GET="1"
+            # Finalize
             logger "MYSQL" "ARGS" "$MSL_TOO"
             ;;
         -n|--nginx)
+            # Document
             echo "Install Nginx"
             logger "NGINX" "ARGS"
+            # Validate
             isCalledAgain "$NGX_TOO"
+            # Process aux args
             NGX_TOO="1"
+            APT_GET="1"
+            # Finalize
             logger "NGINX" "ARGS" "$NGX_TOO"
             ;;
         -f|--ufw)
+            # Document
             echo "Install UFW"
             logger "UFW" "ARGS" "$2"
+            # Validate
             isCalledAgain "$UFW_TOO"
+            # Process aux args
             UFW_TOO="1"
             UFW_SSH="$2"
+            APT_GET="1"
+            # Finalize
             logger "UFW" "ARGS" "$UFW_TOO"
-            echo "UFW too"
             shift
             ;;
         -l|--log)
@@ -165,76 +219,81 @@ while test ${#} -gt 0; do
     shift
 done
 
-# In case we didn't do anything yet
-if [ $ARG_CNT -eq 0 ]; then
-    echo "No args yo."
-    exit -1
+printf "$LOG_FLE\n" > "$APT_LOG"
+
+if [ "$APT_GET" == "1" ]; then
+    logger "APT-GET UPDATE" "BEGIN"
+
+    APT_UPD="apt-get -y update"
+    procLog "$APT_UPD"
+    `$APT_UPD &>> "$APT_LOG"`
+
+    APT_UPG="apt-get -y upgrade"
+    procLog "$APT_UPG"
+    `$APT_UPG &>> "$APT_LOG"`
+    logger "APT_GET UPDATE" "COMPLETE"
 fi
 
-if [ "$VIM_TOO" != "" ] || [ "$MSL_TOO" != "" ] || [ "$TRE_TOO" != "" ] || [ "$GIT_USR" != "" ] || [ "$NGX_TOO" != "" ] || [ "$UFW_TOO" != "" ]; then
-    logger "APT-GET UPDATE"
-    apt-get -y update
-    apt-get -y upgrade
-fi
+#exit -1
 
 # Add User
-logger "ADDUSER" "BEGIN"
 echo "test" "$NEW_USR"
 if [  "$NEW_USR" != "" ]; then
+    logger "ADDUSER" "BEGIN"
     echo "PLEASE MORE HELP"
-    adduser $NEW_USR
+    adduser "$NEW_USR"
     if [ "$USR_PSD" ==  "1" ]; then
-        adduser $NEW_USR sudo
+        adduser "$NEW_USR" sudo
         logger "ADDUSER" "GOT SUDO"
     fi
     logger "ADDUSER" "$NEW_USR" "$USR_PSD"
+    logger "ADDUSER" "COMPLETE"
 fi
-logger "ADDUSER" "COMPLETE"
 
 # Configure SSH
-logger "CONFIGURE SSH" "BEGIN"
 if [ "$SSH_PTH" != "" ]; then
+    logger "CONFIGURE SSH" "BEGIN"
     getUserName
     SSH_DIR="/home/$NEW_USR/.ssh/"
-    SSH_PUB="id_rsa.pub" 
+    SSH_PUB="id_rsa.pub"
     install -d -m 700 "$SSH_DIR"
     mv "$SSH_PTH" "$SSH_DIR$SSH_PUB"
     chown "$NEW_USR" "$SSH_DIR"
     echo "SSH should have been enabled at boot"
-    cat $SSH_DIR$SSH_PUB | ssh $NEW_USR@192.168.1.76 cat >> $SSH_DIR"authorized_keys"
-    logger "SSH CONFIG" `cat $SSH_DIR"authorized_keys"`
+    cat "$SSH_DIR$SSH_PUB" | ssh "$NEW_USR"@192.168.1.76 cat >> "$SSH_DIR""authorized_keys"
+    logger "SSH CONFIG" `cat "$SSH_DIR""authorized_keys"`
+    logger "CONFIGURE SSH" "COMPLETE"
 fi
-logger "CONFIGURE SSH" "COMPLETE"
 
 # Configure Vim
 # We don\'t deserve Vim being set up properly
 # Until we can set up SSH properly.
-logger "CONFIGURE Vim" "BEGIN"
 if [ "$VIM_TOO" == "1" ]; then
+    logger "CONFIGURE Vim" "BEGIN"
     getUserName
-    apt-get install vim -y
+    apt-get install vim -y &>> "$APT_LOG"
     VIM_CNF="/home/$NEW_USR/.vimrc"
-    echo 'syntax on               " Enable color coding' >> $VIM_CNF
-    echo 'set tabstop=4           " \t has width 4' >> $VIM_CNF
-    echo 'set shiftwidth=4        " Indents have width of 4' >> $VIM_CNF
-    echo 'set softtabstop=4       " Set number of columns for \t' >> $VIM_CNF
-    echo 'set expandtab           " Expand \t to spaces' >> $VIM_CNF
+    echo 'syntax on               " Enable color coding' >> "$VIM_CNF"
+    echo 'set tabstop=4           " \t has width 4' >> "$VIM_CNF"
+    echo 'set shiftwidth=4        " Indents have width of 4' >> "$VIM_CNF"
+    echo 'set softtabstop=4       " Set number of columns for \t' >> "$VIM_CNF"
+    echo 'set expandtab           " Expand \t to spaces' >> "$VIM_CNF"
+    logger "CONFIGURE Vim" "COMPLETED"
 fi
-logger "CONFIGURE Vim" "COMPLETED"
 
 
-logger "INSTALL GIT" "Begin"
 if [ "$GIT_USR" != "" ]; then
+    logger "INSTALL GIT" "Begin"
     GIT_DIR="/home/$NEW_USR/.gitconfig"
     logger "INSTALL GIT" "$GIT_USR" "$GIT_KEY" "$GIT_DIR" "$GIT_EML"
     getUserName
-    apt-get install git -y
-    
+    apt-get install git -y &>> "$APT_LOG"
+
     echo "[user]" > "$GIT_DIR"
     echo "  name = $GIT_USR" >> "$GIT_DIR"
     echo "  email = $GIT_EML" >> "$GIT_DIR"
 
-    if [ "$VIM_TOO" == "1" ]; then 
+    if [ "$VIM_TOO" == "1" ]; then
         echo "[core]" >> "$GIT_DIR"
         echo "  editor = vim" >> "$GIT_DIR"
         logger "INSTALL GIT" "Vim Too"
@@ -263,33 +322,34 @@ if [ "$GIT_USR" != "" ]; then
         logger "INSTALL GIT" "TMP" " "
         logger "$TMP"
     fi
+    logger "INSTALL GIT" "COMPLETE"
 fi
-logger "INSTALL GIT" "COMPLETE"
 
 # Install Tree
-logger "INSTALL TREE" "BEGIN"
 if [ "$TRE_TOO" == "1" ]; then
-    apt-get install tree -y
+    logger "INSTALL TREE" "BEGIN"
+    apt-get install tree -y &>> "$APT_LOG"
+    logger "INSTALL TREE" "COMPLETE"
 fi
 
 # Install UFW
-logger "INSTALL UFW" "BEGIN"
 if [ "$UFW_TOO" == "SSH" ]; then
-    apt-get install ufw -y
+    logger "INSTALL UFW" "BEGIN"
+    apt-get install ufw -y &>> "$APT_LOG"
 
     if [ "$UFW_SSH" == "SSH" ]; then
         ufw allow ssh
     fi
 
     ufw enable
+    logger "INSTALL UFW" "COMPLETE"
 fi
-logger "INSTALL UFW" "COMPLETE"
 
 # Install MySQL
 # This is gonna be fun...
-logger "INSTALL MYSQL" "BEGIN"
 if [ "$MSL_TOO" == "1" ]; then
-    apt-get install mysql-server python-mysqldb mysql-client -y
+    logger "INSTALL MYSQL" "BEGIN"
+    apt-get install mysql-server python-mysqldb mysql-client -y &>> "$APT_LOG"
 
     # Now let's kill the running process so we can auto-config
     sleep 2
@@ -326,19 +386,18 @@ if [ "$MSL_TOO" == "1" ]; then
     mysql < "$USR_CNF"
 
     rm -rf "$MSL_CNF"
-    rm -rf "$USR_CNF"    
-
+    rm -rf "$USR_CNF"
+    logger "INSTALL MYSQL" "COMPLETE"
 fi
-logger "INSTALL MYSQL" "COMPLETE"
 
 # Install NGINX
-logger "INSTALL NGINX" "BEGIN"
 if [ "$NGX_TOO" == "1" ]; then
-    apt-get install nginx -y
+    logger "INSTALL NGINX" "BEGIN"
+    apt-get install nginx -y &>> "$APT_LOG"
 
     # Need php and mysql integration
-    apt-get install php7.0-fpm php7.0-cgi php7.0-mysql -y
-    
+    apt-get install php7.0-fpm php7.0-cgi php7.0-mysql -y &>> "$APT_LOG"
+
     # Configure php
     PHP_CNF="/etc/php/7.0/cgi/php.ini"
     sed -i 's/cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' "$PHP_CNF"
@@ -354,20 +413,19 @@ if [ "$NGX_TOO" == "1" ]; then
     sed -i '63s/#}/}/g' "$NGX_PHP" # Yeah, not too proud of this.
     sed -i 's/#location \~ \/\\.ht {/location \~ \/\\.ht {/g' "$NGX_PHP"
     sed -i 's/#\tdeny all;/\tdeny all;/g' "$NGX_PHP"
-    sed -i '70s/#}/}/g' "$NGX_PHP"
-    
+    sed -i '70s/#}/}/g' "$NGX_PHP" # Shut up...
+
     # This will need some additional logic...
     ufw allow http
     ufw allow https
     nginx -t
     systemctl reload nginx
-
+    logger "INSTALL NGINX" "COMPLETE"
 fi
-logger "INSTALL NGINX" "COMPLETE"
 
 
 
 
 
 
-logger "pi_Build.sh" "COMPLETE" 
+logger "pi_Build.sh" "COMPLETE"
