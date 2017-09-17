@@ -78,71 +78,77 @@ while test ${#} -gt 0; do
     case $1 in
         -[Uu]|--user)
             TMP=$2
-            logger "USER" "BEGIN" "$NEW_USR" "$2"
+            echo "Add User - $2"
+            logger "USER" "ARGS" "$NEW_USR" "$2"
             if [ $1 = "-U" ]; then
                 USR_PSD=1
-                echo "SUDO"
+                echo "Add User - with sudo"
             fi
             isCalledAgain "$NEW_USR" "$TMP"
             NEW_USR=$2
-            logger "USER" "COMPLETE" "$USR_PSD"
+            logger "USER" "ARGS" "$USR_PSD"
             shift
             ;;
         -g|--git)
             TMP=$2
-            logger "GIT" "BEGIN" "$GIT_USR" "$2" "$3" "$4"
+            echo "Install Git - $2 $3 $4"
+            logger "GIT" "ARGS" "$GIT_USR" "$2" "$3" "$4"
             isCalledAgain "$GIT_USR" "$TMP"
             GIT_USR=$2
             GIT_EML=$3
             GIT_KEY=$4
-            logger "GIT" "COMPLETE"
+            logger "GIT" "ARGS"
             shift
             shift
             shift
             shift
             ;;
         -v|--vim)
-            logger "VIM" "BEGIN"
+            echo "Install Vim"
+            logger "VIM" "ARGS"
             isCalledAgain "$VIM_TOO"
             VIM_TOO="1"
-            echo "Vim too"
             logger "VIM" "COMPLETE"
             ;;
         -s|--ssh)
             TMP=$2
-            logger "SSH" "BEGIN" "$SSH_PTH" "$2"
+            echo "Configure SSH"
+            logger "SSH" "ARGS" "$SSH_PTH" "$2"
             isCalledAgain "$SSH_PTH" "$TMP"
             doesFileExist $2
             SSH_PTH=$2
             echo $SSH_PTH
-            logger "SSH" "COMPLETE"
+            logger "SSH" "ARGS" 
             shift
             ;;
         -t|--tree)
-            logger "TREE" "BEGIN"
+            echo "Install Tree"
+            logger "TREE" "ARGS"
             isCalledAgain "$TRE_TOO"
             TRE_TOO="1"
-            echo "Tree too"
-            logger "TREE" "COMPLETE"
+            logger "TREE" "ARGS" "$TRE_TOO"
             ;;
         -m|--mysql)
-            logger "MYSQL" "BEGIN"
+            echo "Install MySQL"
+            logger "MYSQL" "ARGS"
             isCalledAgain "$MSL_TOO"
             MSL_TOO="1"
-            echo "MySQL too"
-            logger "MYSQL" "COMPLETE"
+            logger "MYSQL" "ARGS" "$MSL_TOO"
             ;;
         -n|--nginx)
+            echo "Install Nginx"
+            logger "NGINX" "ARGS"
             isCalledAgain "$NGX_TOO"
             NGX_TOO="1"
-            echo "Nginx too"
+            logger "NGINX" "ARGS" "$NGX_TOO"
             ;;
         -f|--ufw)
-            logger "UFW" "BEGIN"
+            echo "Install UFW"
+            logger "UFW" "ARGS" "$2"
             isCalledAgain "$UFW_TOO"
             UFW_TOO="1"
             UFW_SSH="$2"
-            logger "UFW" "$UFW_TOO" "$UFW_SSH"
+            logger "UFW" "ARGS" "$UFW_TOO"
             echo "UFW too"
             shift
             ;;
@@ -191,10 +197,10 @@ if [ "$SSH_PTH" != "" ]; then
     getUserName
     SSH_DIR="/home/$NEW_USR/.ssh/"
     SSH_PUB="id_rsa.pub" 
+    install -d -m 700 "$SSH_DIR"
+    mv "$SSH_PTH" "$SSH_DIR$SSH_PUB"
+    chown "$NEW_USR" "$SSH_DIR"
     echo "SSH should have been enabled at boot"
-    install -d -m 700 $SSH_DIR
-    sudo chown $NEW_USR $SSH_DIR
-    mv $SSH_PTH $SSH_DIR$SSH_PUB
     cat $SSH_DIR$SSH_PUB | ssh $NEW_USR@192.168.1.76 cat >> $SSH_DIR"authorized_keys"
     logger "SSH CONFIG" `cat $SSH_DIR"authorized_keys"`
 fi
