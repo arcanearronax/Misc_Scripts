@@ -374,7 +374,7 @@ if [ "$TRE_TOO" == "1" ]; then
 fi
 
 # Install UFW
-if [ "$UFW_TOO" == "SSH" ]; then
+if [ "$UFW_TOO" == "1" ]; then
     logger "INSTALL UFW" "BEGIN"
     apt-get install ufw -y &>> "$APT_LOG"
 
