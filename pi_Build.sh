@@ -26,6 +26,7 @@ LOG_FLE=".pi_Build."$(date +%H%M%S)".log"
 CUR_PRC=""
 APT_LOG=".apt.$(date +%H%M%S).log"
 APT_GET="0"
+REQ_USR="0"
 
 #################################
 ########### Functions ###########
@@ -45,13 +46,13 @@ logger() {
 procLog() {
   logger "\tprocLog" "$1"
   printf '\n' >> "$APT_LOG"
-  echo "$1" >> "$APT_LOG"
+  printf "$1\n" >> "$APT_LOG"
 }
 
 # Check to see if an arg is being passed again
 isCalledAgain() {
     if [ -n "$1" ]; then
-        echo "ERROR - is CalledAgin - $1 - $2"
+        printf "ERROR - is CalledAgin - $1 - $2\n"
         logger "BAILOUT" "isCalledAgain" "$1" "$2"
         exit -1
     fi
@@ -65,7 +66,26 @@ doesFileExist() {
     else
         SSH_FLE=0
         logger "doesFileExist" "File Not Found" "$2" "$SSH_FLE"
-        echo "WARNING - FILE NOT FOUND - $2"
+        printf "WARNING - FILE NOT FOUND - $2\n"
+    fi
+}
+
+# So we can bail out if the user exists
+doesUserExist() {
+    TMP_FLE="./.tmp"
+    cut -d: -f1 /etc/passwd | grep $NEW_USR > "$TMP_FLE"
+    TMP_USR=`grep -w "$NEW_USR" "$TMP_FLE"`
+    logger "doesUserExist" "$TMP_USR"
+    if [ "$TMP_USR" == "$NEW_USR" ]; then
+        USR_EXT="1"
+        logger "doesUserExist" "USER DOES EXIST"
+        printf "User $NEW_USR already exists.\n"
+    elif [ "$TMP_USR" == "" ]; then
+        logger "doesUserExist" "USER DOES NOT EXIST"
+    else
+        printf "Unknown Result. Exiting now.\n"
+        logger "doesUserExist" "UNKNOWN RESULT" "BAILOUT"
+        exit
     fi
 }
 
@@ -74,6 +94,13 @@ getUserName() {
     if [ "$NEW_USR" == "" ]; then
         read -p "Please enter the name of the relevant user: " NEW_USR
         logger "getUserName" "$NEW_USR"
+
+        doesUserExist
+        if [ "$USR_EXT" != "1" ]; then
+            logger "getUserName" "User Exists"
+        else
+            logger "getUserName" "User Does Not Exist"
+        fi
     fi
 }
 
@@ -85,19 +112,20 @@ logger "pi_Build.sh" "BEGIN"
 
 # In case no args are passed
 if [ ${#} -eq 0 ]; then
-    echo "No args yo."
+    printf "No args yo.\n"
+    printf "EXIT ON" "NO ARGS"
     exit -1
 fi
 
 # Let's process the command line args
-logger "***PROCESS ARGS***"
-logger "**Cycle Args**" $@
+logger "PROCESS ARGS"
+logger "Args Received" "$@"
 while test ${#} -gt 0; do
     case "$1" in
         -[Uu]|--user)
             # Enter
-            echo "Add User - $2"
-            logger "USER" "ARGS" "BEGIN" "$2"
+            printf "Add User - $2\n"
+            logger "\tUSER" "ARGS" "BEGIN" "$2"
             # Validate
             TMP="$2"
             isCalledAgain "$NEW_USR" "$TMP"
@@ -105,16 +133,16 @@ while test ${#} -gt 0; do
             # Process aux args
             if [ "$1" = "-U" ]; then
                 USR_PSD=1
-                echo "Add User - with sudo"
+                printf "Add User - with sudo\n"
             fi
+            REQ_USR="1"
             # Finalize
-            logger "USER" "ARGS" "$USR_PSD"
             shift
             ;;
         -g|--git)
             # Document
-            echo "Install Git - $2 $3 $4"
-            logger "GIT" "ARGS" "$GIT_USR" "$2" "$3" "$4"
+            printf "Install Git - $2 $3 $4\n"
+            logger "\tGIT" "ARGS" "$GIT_USR" "$2" "$3" "$4"
             # Validate
             TMP="$2"
             isCalledAgain "$GIT_USR" "$TMP"
@@ -123,8 +151,8 @@ while test ${#} -gt 0; do
             GIT_EML="$3"
             GIT_KEY="$4"
             APT_GET="1"
+            REQ_USR="1"
             # Finalize
-            logger "GIT" "ARGS"
             shift
             shift
             shift
@@ -132,19 +160,19 @@ while test ${#} -gt 0; do
             ;;
         -v|--vim)
             # Document
-            echo "Install Vim"
-            logger "VIM" "ARGS"
+            printf "Install Vim\n"
+            logger "\tVIM" "ARGS"
             # Validate
             isCalledAgain "$VIM_TOO"
             # Process aux args
             VIM_TOO="1"
             APT_GET="1"
+            REQ_USR="1"
             # Finalize
-            logger "VIM" "ARGS"
             ;;
         -s|--ssh)
             # Document
-            echo "Configure SSH"
+            printf "Configure SSH\n"
             logger "SSH" "ARGS" "$2"
             # Validate
             TMP="$2"
@@ -152,50 +180,49 @@ while test ${#} -gt 0; do
             doesFileExist "$2"
             # Process aux args
             SSH_PTH="$2"
+            REQ_USR="1"
             # Finalize
-            logger "SSH" "ARGS"
             shift
             ;;
         -t|--tree)
             # Document
-            echo "Install Tree"
-            logger "TREE" "ARGS"
+            printf "Install Tree\n"
+            logger "\tTREE" "ARGS"
             # Validate
             isCalledAgain "$TRE_TOO"
             # Process aux args
             TRE_TOO="1"
             APT_GET="1"
             # Finalize
-            logger "TREE" "ARGS" "$TRE_TOO"
+            logger "\tTREE" "ARGS" "$TRE_TOO"
             ;;
         -m|--mysql)
             # Document
-            echo "Install MySQL"
-            logger "MYSQL" "ARGS"
+            printf "Install MySQL\n"
+            logger "\tMYSQL" "ARGS"
             # Validate
             isCalledAgain "$MSL_TOO"
             # Process aux args
             MSL_TOO="1"
             APT_GET="1"
+            REQ_USR="1"
             # Finalize
-            logger "MYSQL" "ARGS" "$MSL_TOO"
             ;;
         -n|--nginx)
             # Document
-            echo "Install Nginx"
-            logger "NGINX" "ARGS"
+            printf "Install Nginx\n"
+            logger "\tNGINX" "ARGS"
             # Validate
             isCalledAgain "$NGX_TOO"
             # Process aux args
             NGX_TOO="1"
             APT_GET="1"
             # Finalize
-            logger "NGINX" "ARGS" "$NGX_TOO"
             ;;
         -f|--ufw)
             # Document
-            echo "Install UFW"
-            logger "UFW" "ARGS" "$2"
+            printf "Install UFW\n"
+            logger "\tUFW" "ARGS" "$2"
             # Validate
             isCalledAgain "$UFW_TOO"
             # Process aux args
@@ -203,16 +230,15 @@ while test ${#} -gt 0; do
             UFW_SSH="$2"
             APT_GET="1"
             # Finalize
-            logger "UFW" "ARGS" "$UFW_TOO"
             shift
             ;;
         -l|--log)
             isCalledAgain "$LOG_FLE"
             LOG_FLE="$2"
-            echo "LOG FILE"
+            printf "LOG FILE\n"
             ;;
         *)
-            echo "Dude, what?"
+            printf "Dude, what?\n"
             exit 1
             ;;
     esac
@@ -237,18 +263,33 @@ fi
 #exit -1
 
 # Add User
-echo "test" "$NEW_USR"
 if [  "$NEW_USR" != "" ]; then
-    logger "ADDUSER" "BEGIN"
-    echo "PLEASE MORE HELP"
-    adduser "$NEW_USR"
-    if [ "$USR_PSD" ==  "1" ]; then
-        adduser "$NEW_USR" sudo
-        logger "ADDUSER" "GOT SUDO"
+    # Need to check to see if the passed user exists
+    USR_EXT=""
+    doesUserExist
+    if [ "$USR_EXT" == "" ]; then
+        logger "ADDUSER" "BEGIN" "$NEW_USR"
+        adduser "$NEW_USR"
+        if [ "$USR_PSD" ==  "1" ]; then
+            adduser "$NEW_USR" sudo
+            logger "\tADDUSER" "GOT SUDO"
+        fi
+        logger "\tADDUSER" "$NEW_USR" "$USR_PSD"
     fi
-    logger "ADDUSER" "$NEW_USR" "$USR_PSD"
     logger "ADDUSER" "COMPLETE"
+
+else
+    if [ "$REQ_USR" == "1" ]; then
+        logger "ADD USER" "REQ USR"
+        USR_EXT=""
+        while [ "$USR_EXT" != "1" ]
+        do
+            getUserName
+        done
+    fi
 fi
+
+
 
 # Configure SSH
 if [ "$SSH_PTH" != "" ]; then
