@@ -446,6 +446,7 @@ if [ "$NGX_TOO" == "1" ]; then
 
     # Enable nginx to use php
     NGX_PHP="/etc/nginx/sites-available/default"
+    cp $NGX_PHP $NGX_PHP.old
     # index index.html index.htm index.nginx-debian.html
     sed -i 's/index index.html index.htm index.nginx-debian.html;/index index.php index.html index.htm index.nginx-debian.html;/g' "$NGX_PHP"
     sed -i 's/#location \~ \\.php\$ {/location \~ \\.php\$ {/g' "$NGX_PHP"
