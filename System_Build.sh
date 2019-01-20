@@ -1,26 +1,90 @@
+#!/bin/bash
+
 #   System Build Script
-#   arronax - 08/27/2017
-#   
+#   arronax - 01/19/2019
+#
 #   Must run without sudo.
 
-#   Uncomment most everything before running
-#   Running as ./System_Build -y will bypass continue prompts
+#   Reworking this a bit
+#
 
-# Get our arg vars set
-for i in $@; do
-    FAST=0
-    case $i in
-        -y)
-            FAST=1
-            ;;
+# Get our script parameters
+while test ${#} -gt 0; do
+    case $1 in
+        --pub)
+          SSH_PUB="$2"
+          shift
+          shift
+          ;;
+        --priv)
+          SSH_PRIV="$2"
+          shift
+          shift
+          ;;
         *)
-            echo "ARG: $i is unknown. Exiting Script."
-            exit 1
-            ;;
+          echo "ARG: $1 is unknown. Exiting Script."
+          exit 1
+          ;;
     esac
 done
 
-echo $1
+echo "$SSH_PUB"
+echo "$SSH_PRIV"
+
+
+# Get info about the environment for vars
+OS_NAME=`cat /etc/*-release | grep -m1 NAME | awk -F '[=]' '{print $2}'`
+echo $OS_NAME
+# Possible Values:
+# Fedora
+# Raspbian GNU/Linux
+# Ubuntu
+
+if [ "$OS_NAME" == "" ]; then
+  echo "Could not retrieve OS_NAME."
+  exit 0
+fi
+
+# Package manager updates
+if [ "$OS_NAME" == "Fedora" ]; then
+  sudo dnf update -y 2&>1
+  sudo dnf upgrade -f 2&>1
+  echo "DNF Update"
+else if [ "$OS_NAME" == "Raspbian GNU/Linux" ]; then
+  sudo apt-get update -y 2&>1
+  sudo apt-get upgrade -y 2&>1
+  echo "APT Update"
+else if [ "$OS_NAME" == "Ubuntu" ]; then
+  sudo apt-get update -y 2&>1
+  sudo apt-get upgrade -y 2&>1
+  echo "APT Update"
+fi
+
+# Add bash aliases
+if [ "$OS_NAME" != "Raspbian GNU/Linux" ]; then
+  echo "alias gopi='ssh arronax@10.0.0.5'" >> ~/.bashrc
+  echo "alias la='ls -ulta'" >> ~/.bashrc
+  echo "alias vpnic='/home/arronax/bin/CG_IC 2&>1'"
+  . ~/.bashrc
+fi
+
+# Setup SSH config
+
+# Update vim
+
+
+
+
+
+
+
+
+
+exit 1
+
+#
+# Keep everything below here until it's updated above
+#
 
 # Get the user's base information
 USR_DIR=$HOME
