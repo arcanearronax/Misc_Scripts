@@ -1,0 +1,6 @@
+CFGUSER=testUser
+int1=int2
+PROFILE=tester
+int0=int3
+KEY=/home/arronax/.ssh/id_rsa
+LOCAL=/home/arronax/.ssh
